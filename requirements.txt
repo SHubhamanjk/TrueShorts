@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pymongo
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+feedparser
+requests
+newspaper3k
+sentence-transformers
+faiss-cpu
+nltk
+python-dotenv
