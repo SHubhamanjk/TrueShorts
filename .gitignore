@@ -10,7 +10,7 @@ __pycache__/
 .ipynb_checkpoints
 
 # FAISS index files
-faiss_indexes/
+# faiss_indexes/
 
 # VSCode settings
 .vscode/
