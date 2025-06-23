@@ -6,9 +6,12 @@ import os
 import numpy as np
 import logging
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 
 logger = logging.getLogger(__name__)
+
+IST = pytz.timezone('Asia/Kolkata')
 
 async def deduplicate_articles():
     from services.news_aggregator import fetch_all_articles
@@ -39,18 +42,18 @@ async def deduplicate_articles_for_user(user_id):
     new_articles = []
     for article in articles:
         embedding = embed_text(article["title"] + " " + article["content"])
-        if not is_similar(embedding, user_index):
-            article["embedding"] = embedding.tolist()
-            article["user_id"] = user_id
-            article["seen"] = False
-            result = await db.db.articles.insert_one(article)
-            article_id = result.inserted_id
-            faiss_id = int(article_id.binary.hex(), 16) % (2**63)
-            user_index.add_with_ids(
-                np.array([embedding], dtype=np.float32),
-                np.array([faiss_id], dtype=np.int64)
-            )
-            new_articles.append(article)
+        article["embedding"] = embedding.tolist()
+        article["user_id"] = user_id
+        article["seen"] = False
+        article["fetched_at"] = datetime.now(IST)
+        result = await db.db.articles.insert_one(article)
+        article_id = result.inserted_id
+        faiss_id = int(article_id.binary.hex(), 16) % (2**63)
+        user_index.add_with_ids(
+            np.array([embedding], dtype=np.float32),
+            np.array([faiss_id], dtype=np.int64)
+        )
+        new_articles.append(article)
     faiss_manager.save_index(f"user_{user_id}.index", user_index)
     return new_articles
 
@@ -61,11 +64,7 @@ async def get_news_for_user(user_id: str, category: str = None, source: str = No
         query["category"] = category
     if source:
         query["source"] = source
-    pipeline = [
-        {"$match": query},
-        {"$sample": {"size": 100}}
-    ]
-    cursor = db.db.articles.aggregate(pipeline)
+    cursor = db.db.articles.find(query).sort("published", -1).limit(100)
     recommendations = []
     read_cursor = db.db.user_reads.find({"user_id": user_id})
     read_ids = set()
@@ -79,7 +78,6 @@ async def get_news_for_user(user_id: str, category: str = None, source: str = No
         if not recommendations and _refresh:
             await deduplicate_articles_for_user(user_id)
             return await get_news_for_user(user_id, category, source, _refresh=False)
-        # Mark the first article as seen if available
         if recommendations:
             await db.db.articles.update_one({"_id": recommendations[0][0]["_id"]}, {"$set": {"seen": True}})
         return recommendations[:10]
@@ -94,7 +92,6 @@ async def get_news_for_user(user_id: str, category: str = None, source: str = No
     if not recommendations and _refresh:
         await deduplicate_articles_for_user(user_id)
         return await get_news_for_user(user_id, category, source, _refresh=False)
-    # Mark the first article as seen if available
     if recommendations:
         await db.db.articles.update_one({"_id": recommendations[0][0]["_id"]}, {"$set": {"seen": True}})
     return sorted(recommendations, key=lambda x: x[1], reverse=True)[:10]
@@ -119,3 +116,8 @@ async def track_user_read(user_id: str, article_id: str, duration: int):
         "timestamp": datetime.utcnow()
     })
     return True
+
+async def delete_old_articles_for_user(user_id):
+    cutoff = datetime.now(IST) - timedelta(days=3)
+    result = await db.db.articles.delete_many({"user_id": user_id, "fetched_at": {"$lt": cutoff}})
+    return result.deleted_count

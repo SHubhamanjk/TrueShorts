@@ -17,11 +17,9 @@ async def extract_full_article(session: aiohttp.ClientSession, url: str) -> str:
             html = await response.text()
             soup = BeautifulSoup(html, 'html.parser')
             
-            # Remove unwanted elements
             for element in soup(['script', 'style', 'header', 'footer', 'nav']):
                 element.decompose()
             
-            # Extract text from common content containers
             content_containers = [
                 *soup.select('article, .article, .content, .post, .story'),
                 *soup.find_all(['p', 'div'], class_=lambda x: x and 'content' in x)
@@ -31,7 +29,6 @@ async def extract_full_article(session: aiohttp.ClientSession, url: str) -> str:
                 return ' '.join([container.get_text(separator=' ', strip=True) 
                                 for container in content_containers])
             
-            # Fallback to body text
             return soup.get_text(separator=' ', strip=True)[:10000]
     except (aiohttp.ClientError, asyncio.TimeoutError) as e:
         logger.error(f"Error fetching {url}: {str(e)}")
@@ -48,7 +45,7 @@ async def fetch_rss_articles(source_name: str, rss_url: str) -> list:
                 feed = feedparser.parse(xml)
                 
                 tasks = []
-                for entry in feed.entries[:20]:  # Limit to 20 articles per feed
+                for entry in feed.entries[:20]: 
                     if 'link' in entry:
                         tasks.append(process_rss_entry(session, source_name, entry))
                 
@@ -64,7 +61,6 @@ async def process_rss_entry(session: aiohttp.ClientSession, source_name: str, en
         content = await extract_full_article(session, entry.link)
         if not content:
             return None
-        # Try to extract category from entry, fallback to None
         category = None
         if hasattr(entry, 'tags') and entry.tags:
             category = entry.tags[0]['term'] if 'term' in entry.tags[0] else None
@@ -91,7 +87,7 @@ async def fetch_gnews_articles() -> list:
                 data = await response.json()
                 
                 tasks = []
-                for item in data.get("articles", [])[:20]:  # Limit to 20 articles
+                for item in data.get("articles", [])[:20]: 
                     if 'url' in item:
                         tasks.append(process_gnews_item(session, item))
                 
@@ -125,19 +121,15 @@ async def process_gnews_item(session: aiohttp.ClientSession, item: dict) -> dict
 async def fetch_all_articles() -> list:
     """Fetch articles from all sources concurrently"""
     try:
-        # Create tasks for all RSS sources
         rss_tasks = [
             fetch_rss_articles(source, url)
             for source, url in Config.RSS_SOURCES.items()
         ]
         
-        # Add GNews task
         all_tasks = rss_tasks + [fetch_gnews_articles()]
         
-        # Execute all concurrently
         results = await asyncio.gather(*all_tasks, return_exceptions=True)
         
-        # Process results
         articles = []
         for result in results:
             if isinstance(result, Exception):
