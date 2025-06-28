@@ -1,6 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from services.news_service import deduplicate_articles_for_user, delete_old_articles_for_user
+from services.news_service import deduplicate_articles_for_user, delete_old_articles_for_user, verify_unverified_articles_global
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
@@ -27,3 +28,19 @@ async def periodic_cleanup():
         deleted = await delete_old_articles_for_user(user_id)
         total_deleted += deleted
     logger.info(f"Deleted {total_deleted} old articles (older than 3 days)")
+
+async def run_verification_forever():
+    while True:
+        logger.info("Starting global news verification batch...")
+        await verify_unverified_articles_global()
+        logger.info("Verification batch complete. Sleeping 10 minutes...")
+        await asyncio.sleep(600)
+
+@scheduler.scheduled_job('interval', minutes=10)
+async def periodic_verification():
+    await verify_unverified_articles_global()
+
+async def start_background_verification():
+    asyncio.create_task(run_verification_forever())
+    scheduler.start()
+    logger.info("Background verification started.")

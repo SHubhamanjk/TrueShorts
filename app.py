@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from endpoints import auth, news
-from tasks.background import scheduler
-
+from endpoints import auth, news, fake_news
+from tasks.background import scheduler, start_background_verification
+from dotenv import load_dotenv
+load_dotenv()
 openapi_tags = [
     {
         "name": "News Aggregation and Personalization"    }
@@ -13,7 +14,8 @@ app = FastAPI(
 )
 app.include_router(auth.router, tags=["News Aggregation and Personalization"])
 app.include_router(news.router, tags=["News Aggregation and Personalization"])
+app.include_router(fake_news.router, tags=["News Aggregation and Personalization"])
 
 @app.on_event("startup")
 async def startup_event():
-    scheduler.start()
+    await start_background_verification()

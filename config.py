@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class Config:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -13,4 +15,8 @@ class Config:
         "thehindu": "https://www.thehindu.com/news/national/?service=rss"
     }
     ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+    GOOGLE_FACT_CHECK_API_KEY = os.getenv("GOOGLE_FACT_CHECK_API_KEY")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "news")
 

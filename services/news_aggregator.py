@@ -72,7 +72,8 @@ async def process_rss_entry(session: aiohttp.ClientSession, source_name: str, en
             "published": entry.get("published", ""),
             "url": entry.link,
             "category": category,
-            "source": source_name
+            "source": source_name,
+            "verified": False
         }
     except Exception as e:
         logger.exception(f"Error processing RSS entry: {entry.title}")
@@ -112,7 +113,8 @@ async def process_gnews_item(session: aiohttp.ClientSession, item: dict) -> dict
             "published": item.get("publishedAt", ""),
             "url": item["url"],
             "category": category,
-            "source": "gnews"
+            "source": "gnews",
+            "verified": False
         }
     except Exception as e:
         logger.exception(f"Error processing GNews item: {item['title']}")

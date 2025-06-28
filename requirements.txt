@@ -12,6 +12,13 @@ faiss-cpu
 nltk
 python-dotenv
 pytz
-googletrans==4.0.0-rc1
+# googletrans==4.0.0-rc1
 motor
 pydantic[email]
+requests
+langchain>=0.1.0
+groq
+langchain-groq>=0.0.2
+duckduckgo-search>=4.0.4
+wikipedia>=1.4.0
+langchain-community

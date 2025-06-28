@@ -8,9 +8,10 @@ from tasks.background import scheduler
 from datetime import datetime
 from bson.objectid import ObjectId
 from services.news_aggregator import fetch_all_articles
-from googletrans import Translator
-from model.article import ArticleOut, SavedArticleOut, SearchArticleOut
+# from googletrans import Translator
+from model.article import ArticleOut, SavedArticleOut, SearchArticleOut, NewsAgentInput, NewsAgentOutput, NewsAgentFollowUpInput, NewsAgentFollowUpOutput
 from typing import List, Dict, Any
+from services import news_agent_service
 
 router = APIRouter()
 
@@ -26,7 +27,27 @@ async def get_news(token: str = Depends(get_current_user)):
     articles = await get_news_for_user(token)
     if not articles:
         raise HTTPException(status_code=404, detail="No articles found")
-    return articles[0][0]
+    article = articles[0][0]
+    # Convert MongoDB document to ArticleOut format
+    article_out = ArticleOut(
+        article_id=str(article["_id"]),
+        title=article["title"],
+        content=article["content"],
+        category=article.get("category"),
+        published=article.get("published"),
+        source=article.get("source"),
+        url=article.get("url"),
+        user_id=article.get("user_id"),
+        embedding=article.get("embedding"),
+        fetched_at=article.get("fetched_at"),
+        seen=article.get("seen", False),
+        verified=article.get("verified", False),
+        verdict=article.get("verdict"),
+        explanation=article.get("explanation")
+    )
+    # Update seen status in DB
+    await db.db.articles.update_one({"_id": article["_id"]}, {"$set": {"seen": True}})
+    return article_out
 
 # @router.get("/news/{category}")
 # async def get_category_news(category: str, token: str = Depends(get_current_user)):
@@ -106,39 +127,57 @@ async def search_news(query: str = Query(..., description="Keywords or descripti
     ]
     return filtered
 
-@router.get("/news/translate/{article_id}", response_model=ArticleOut)
-async def translate_article(article_id: str, token: str = Depends(get_current_user)):
-    user_id = token
-    article = await db.db.articles.find_one({"_id": ObjectId(article_id), "user_id": user_id})
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found for this user")
-    translator = Translator()
+# @router.get("/news/translate/{article_id}", response_model=ArticleOut)
+# async def translate_article(article_id: str, token: str = Depends(get_current_user)):
+#     user_id = token
+#     article = await db.db.articles.find_one({"_id": ObjectId(article_id), "user_id": user_id})
+#     if not article:
+#         raise HTTPException(status_code=404, detail="Article not found for this user")
+#     translator = Translator()
+#     try:
+#         title = article.get("title", "") or ""
+#         content = article.get("content", "") or ""
+#         if not title and not content:
+#             raise ValueError("No title or content to translate.")
+#         translated_title = title
+#         translated_content = content
+#         if title:
+#             try:
+#                 result = translator.translate(title, dest='hi')
+#                 if result and hasattr(result, 'text') and result.text:
+#                     translated_title = result.text
+#             except Exception:
+#                 pass
+#         if content:
+#             try:
+#                 result = translator.translate(content, dest='hi')
+#                 if result and hasattr(result, 'text') and result.text:
+#                     translated_content = result.text
+#             except Exception:
+#                 pass
+#         if translated_title == title and translated_content == content:
+#             raise ValueError("Translation service unavailable or failed. Returning original text.")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
+#     translated_article = article.copy()
+#     translated_article["title"] = translated_title
+#     translated_article["content"] = translated_content
+#     return ArticleOut(**translated_article)
+
+@router.post("/get_more_about_news", response_model=NewsAgentOutput)
+async def get_more_about_news(input: NewsAgentInput):
     try:
-        title = article.get("title", "") or ""
-        content = article.get("content", "") or ""
-        if not title and not content:
-            raise ValueError("No title or content to translate.")
-        translated_title = title
-        translated_content = content
-        if title:
-            try:
-                result = translator.translate(title, dest='hi')
-                if result and hasattr(result, 'text') and result.text:
-                    translated_title = result.text
-            except Exception:
-                pass
-        if content:
-            try:
-                result = translator.translate(content, dest='hi')
-                if result and hasattr(result, 'text') and result.text:
-                    translated_content = result.text
-            except Exception:
-                pass
-        if translated_title == title and translated_content == content:
-            raise ValueError("Translation service unavailable or failed. Returning original text.")
+        session_id, timeline, analysis = await news_agent_service.start_news_agent_session(input.article_id)
+        return NewsAgentOutput(session_id=session_id, timeline=timeline, analysis=analysis)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
-    translated_article = article.copy()
-    translated_article["title"] = translated_title
-    translated_article["content"] = translated_content
-    return ArticleOut(**translated_article)
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/get_more_follow_up", response_model=NewsAgentFollowUpOutput)
+async def get_more_follow_up(input: NewsAgentFollowUpInput):
+    try:
+        session_id, answer = await news_agent_service.follow_up_news_agent_session(input.session_id, input.question)
+        return NewsAgentFollowUpOutput(session_id=session_id, answer=answer)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
