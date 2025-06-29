@@ -1,0 +1,85 @@
+name: Auto Stop Azure Container on Idle
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+
+jobs:
+  check-idle-and-stop:
+    runs-on: ubuntu-latest
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pymongo python-dateutil
+
+      - name: Check last_active timestamp
+        id: check_idle
+        run: |
+          python <<EOF
+          import os
+          from datetime import datetime, timedelta
+          from pymongo import MongoClient
+          from dateutil.parser import parse
+
+          MONGO_URI = os.environ["MONGO_URI"]
+          client = MongoClient(MONGO_URI)
+          db = client["activity"]
+          doc = db["heartbeat"].find_one({"_id": "trueshorts-backend"})
+          client.close()
+
+          if not doc or "last_active" not in doc:
+              print("idle=true" >> open(os.environ['GITHUB_OUTPUT'], 'a'))
+          else:
+              last_active = parse(str(doc["last_active"]))
+              idle = (datetime.utcnow() - last_active) > timedelta(hours=1.5)
+              print(f"Last active: {last_active}, Idle: {idle}")
+              print(f"idle={str(idle).lower()}" >> open(os.environ['GITHUB_OUTPUT'], 'a'))
+          EOF
+
+      - name: Azure Login
+        if: steps.check_idle.outputs.idle == 'true'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Stop Azure Container Instance
+        if: steps.check_idle.outputs.idle == 'true'
+        run: |
+          az container stop \
+            --name trueshorts-backend \
+            --resource-group trueshorts-backend
+
+      - name: Send email notification on stop
+        if: steps.check_idle.outputs.idle == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_FROM }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "🛑 Container Auto-Stopped: trueshorts-backend"
+          to: |
+            shubham07kumargupta@gmail.com,
+            iamnidhinupur@gmail.com,
+            ashishguptaaur2020@gmail.com,
+            pranavpratyush1003@gmail.com
+          from: ${{ secrets.EMAIL_FROM }}
+          body: |
+            Hello Team,
+
+            The Azure container `trueshorts-backend` has been automatically stopped due to 1.5 hours of inactivity 💤
+
+            This helps preserve Azure credits under the student plan 💰
+
+            Regards,  
+            GitHub Actions

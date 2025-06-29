@@ -11,6 +11,160 @@ TrueShorts is an intelligent news aggregation and verification platform that com
 - **Multi-Source Aggregation**: Collects news from multiple reliable sources (BBC, Reuters, Al Jazeera, etc.)
 - **Real-time Fact Checking**: Continuously verifies news claims in the background
 
+## 🚀 How to Use the API
+
+### Option 1: Use the Deployed API (Production)
+
+The backend is deployed and available at:
+
+```
+http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000
+```
+
+- **API Docs:** http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000/docs
+- Use this URL in your frontend or API testing tools (e.g., Postman, Swagger UI).
+- All endpoints described below are available at this base URL.
+
+### Option 2: Run Locally with Docker Compose
+
+You can run the backend locally for development or testing using Docker Compose:
+
+```bash
+# 1. Clone the repository
+# 2. Create a .env file with your secrets (see below)
+# 3. Start all services
+
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+#### Example docker-compose.yml
+```yaml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  backend:
+    image: shubhthecoder/trueshorts_backend:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+```
+
+## 📚 API Documentation
+
+- **Production Docs:** http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000/docs
+- **Local Docs:** http://localhost:8000/docs (if running locally)
+
+## 🔗 API Endpoints & Usage Guide
+
+All endpoints are available at the base URL (production or local). For example:
+- Production: `http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000/news`
+- Local: `http://localhost:8000/news`
+
+### Authentication
+- `POST /auth/signup` — Register a new user
+- `POST /auth/login` — Login and get JWT token
+
+### News
+- `GET /news` — Get personalized news (requires JWT)
+- `POST /read/{article_id}` — Track reading
+- `POST /fetch-latest-news` — Fetch latest news
+- `POST /news/save/{article_id}` — Save article
+- `GET /news/saved` — Get saved articles
+- `GET /news/search?query=...` — Search news
+
+### AI News Agent
+- `POST /get_more_about_news` — Start AI chat about an article
+- `POST /get_more_follow_up` — Ask follow-up questions
+
+### Fake News Detection
+- `POST /fake_news/claim-verdict` — Verify a claim
+
+## 📝 Environment Variables
+
+For local development, create a `.env` file:
+
+```env
+GNEWS_API_KEY=f30e4c031aa2ea070ba8b4fca5109aa3
+SECRET_KEY=1a2b3c4d5e6f7g8h9i0jkLMNOPQrstuvWXyz9876543210
+MONGO_URI=mongodb+srv://shubham07kumargupta:Shubham@2006@trueshorts-cluster.vzk8awq.mongodb.net/?retryWrites=true&w=majority&appName=trueshorts-cluster
+SERPER_API_KEY=0f8f7d962eeb0953e4190e2311e140c5a6c02d50
+GOOGLE_FACT_CHECK_API_KEY=AIzaSyDLMGxKA8LhHeejl52owJ6kLEYYWEnnnbw
+GROQ_API_KEY=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
+```
+
+## 🧑‍💻 Example: Using the API from Frontend
+
+```javascript
+const API_BASE = 'http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000'; // or 'http://localhost:8000' for local
+
+// Register
+fetch(`${API_BASE}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+  .then(res => res.json())
+  .then(console.log);
+
+// Login
+fetch(`${API_BASE}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+  .then(res => res.json())
+  .then(data => localStorage.setItem('token', data.access_token));
+
+// Get news (after login)
+fetch(`${API_BASE}/news`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+  .then(res => res.json())
+  .then(console.log);
+```
+
+## 🗄️ Accessing the Database (MongoDB)
+
+- **Production:**
+  - MongoDB is not exposed publicly for security. Use Azure Portal or a secure admin tunnel if needed.
+- **Local:**
+  - Use MongoDB Compass or mongosh:
+    - Connection string: `mongodb://admin:password@localhost:27017`
+    - Default DB: `news`
+
+## 🛡️ Auto-Shutdown Feature (Production)
+- Every API request updates a `last_active` timestamp in MongoDB.
+- A scheduled GitHub Action checks this timestamp every 15 minutes.
+- If the backend is idle for >1.5 hours, the Azure container is automatically stopped to save costs.
+
+## 🛠️ CI/CD Pipeline (GitHub Actions)
+
+Deployment is automated using GitHub Actions:
+- On every push to `main`, the workflow `.github/workflows/docker-render-deploy.yml` will:
+  1. Build and push the Docker image to Docker Hub (`shubhthecoder/trueshorts_backend:latest`).
+  2. Log in to Azure using the service principal credentials in `AZURE_CREDENTIALS`.
+  3. Restart the Azure Container Instance (`trueshorts-backend` in resource group `trueshorts-backend`).
+- This ensures your latest code is always deployed to the public API URL above.
+
+## 📞 Support
+If you encounter issues:
+- Check the [API docs](http://trueshorts-api.duejcqajdff7c5h2.centralindia.azurecontainer.io:8000/docs)
+- Check logs in Azure Portal
+- For local: `docker-compose logs`
+- For deployment: see GitHub Actions logs
+
 ##  Quick Start (DockerHub Image)
 
 ### Prerequisites
