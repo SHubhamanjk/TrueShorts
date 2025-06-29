@@ -2,7 +2,7 @@ name: Auto Stop Azure Container on Idle
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
+    - cron: '*/15 * * * *'  # Runs every 15 minutes
 
 jobs:
   check-idle-and-stop:
@@ -11,7 +11,7 @@ jobs:
       MONGO_URI: ${{ secrets.MONGO_URI }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: pip install pymongo python-dateutil
 
-      - name: Check last_active timestamp
+      - name: Check MongoDB for idle status
         id: check_idle
         run: |
           python <<EOF
@@ -31,20 +31,20 @@ jobs:
           from pymongo import MongoClient
           from dateutil.parser import parse
 
-          MONGO_URI = os.environ["MONGO_URI"]
-          client = MongoClient(MONGO_URI)
+          mongo_uri = os.environ["MONGO_URI"]
+          client = MongoClient(mongo_uri)
           db = client["activity"]
           doc = db["heartbeat"].find_one({"_id": "trueshorts-backend"})
           client.close()
 
-          idle = True  # Default to idle if no doc or timestamp
-          if doc and "last_active" in doc:
+          if not doc or "last_active" not in doc:
+              is_idle = True
+          else:
               last_active = parse(str(doc["last_active"]))
-              idle = (datetime.utcnow() - last_active) > timedelta(hours=1.5)
-              print(f"Last active: {last_active}, Idle: {idle}")
+              is_idle = (datetime.utcnow() - last_active) > timedelta(hours=1.5)
 
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"idle={str(idle).lower()}\n")
+              f.write(f"idle={str(is_idle).lower()}\n")
           EOF
 
       - name: Azure Login
@@ -60,7 +60,7 @@ jobs:
             --name trueshorts-backend \
             --resource-group trueshorts-backend
 
-      - name: Send email notification on stop
+      - name: Send Email Notification
         if: steps.check_idle.outputs.idle == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
@@ -78,9 +78,10 @@ jobs:
           body: |
             Hello Team,
 
-            The Azure container `trueshorts-backend` has been automatically stopped due to 1.5 hours of inactivity 💤
+            ✅ The Azure container `trueshorts-backend` was automatically stopped due to 1.5 hours of inactivity.
 
-            This helps preserve Azure credits under the student plan 💰
+            ⚙️ Cron job: every 15 minutes  
+            ⏱ Last activity check passed idle condition
 
-            Regards,  
-            GitHub Actions
+            Best regards,  
+            GitHub Actions – Auto Stop Monitor
