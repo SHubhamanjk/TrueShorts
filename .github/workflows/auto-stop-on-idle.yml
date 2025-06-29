@@ -37,13 +37,14 @@ jobs:
           doc = db["heartbeat"].find_one({"_id": "trueshorts-backend"})
           client.close()
 
-          if not doc or "last_active" not in doc:
-              print("idle=true" >> open(os.environ['GITHUB_OUTPUT'], 'a'))
-          else:
+          idle = True  # Default to idle if no doc or timestamp
+          if doc and "last_active" in doc:
               last_active = parse(str(doc["last_active"]))
               idle = (datetime.utcnow() - last_active) > timedelta(hours=1.5)
               print(f"Last active: {last_active}, Idle: {idle}")
-              print(f"idle={str(idle).lower()}" >> open(os.environ['GITHUB_OUTPUT'], 'a'))
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"idle={str(idle).lower()}\n")
           EOF
 
       - name: Azure Login
