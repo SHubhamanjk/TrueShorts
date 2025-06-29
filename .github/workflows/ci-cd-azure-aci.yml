@@ -36,7 +36,8 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Delete existing container
+      - name: Delete existing container (if exists)
+        continue-on-error: true
         run: |
           az container delete \
             --name trueshorts-backend \
@@ -56,7 +57,13 @@ jobs:
             --memory 4 \
             --ports 8000 \
             --dns-name-label trueshorts-api \
-            --environment-variables GNEWS_API_KEY=${{ secrets.GNEWS_API_KEY }} SECRET_KEY=${{ secrets.SECRET_KEY }} MONGO_URI=${{ secrets.MONGO_URI }} SERPER_API_KEY=${{ secrets.SERPER_API_KEY }} GOOGLE_FACT_CHECK_API_KEY=${{ secrets.GOOGLE_FACT_CHECK_API_KEY }} GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+            --environment-variables \
+              GNEWS_API_KEY=${{ secrets.GNEWS_API_KEY }} \
+              SECRET_KEY=${{ secrets.SECRET_KEY }} \
+              MONGO_URI=${{ secrets.MONGO_URI }} \
+              SERPER_API_KEY=${{ secrets.SERPER_API_KEY }} \
+              GOOGLE_FACT_CHECK_API_KEY=${{ secrets.GOOGLE_FACT_CHECK_API_KEY }} \
+              GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
             --os-type Linux \
             --restart-policy OnFailure
 
