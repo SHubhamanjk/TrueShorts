@@ -36,18 +36,35 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Update Azure Container Instance with new image
+    - name: Delete existing container
       run: |
-        az container update \
+        az container delete \
           --name trueshorts-backend \
           --resource-group trueshorts-backend \
-          --set containers[0].image=shubhthecoder/trueshorts_backend:latest
+          --yes
 
-    - name: Restart Azure Container Instance
+    - name: Recreate container with latest image
       run: |
-        az container restart \
+        az container create \
+          --resource-group trueshorts-backend \
           --name trueshorts-backend \
-          --resource-group trueshorts-backend
+          --image shubhthecoder/trueshorts_backend:latest \
+          --registry-login-server index.docker.io \
+          --registry-username ${{ secrets.DOCKER_USERNAME }} \
+          --registry-password ${{ secrets.DOCKER_PASSWORD }} \
+          --cpu 2 \
+          --memory 4 \
+          --ports 8000 \
+          --dns-name-label trueshorts-api \
+          --environment-variables \
+              GNEWS_API_KEY=${{ secrets.GNEWS_API_KEY }} \
+              SECRET_KEY=${{ secrets.SECRET_KEY }} \
+              MONGO_URI=${{ secrets.MONGO_URI }} \
+              SERPER_API_KEY=${{ secrets.SERPER_API_KEY }} \
+              GOOGLE_FACT_CHECK_API_KEY=${{ secrets.GOOGLE_FACT_CHECK_API_KEY }} \
+              GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+          --os-type Linux \
+          --restart-policy OnFailure
 
     - name: Send email notification on successful deploy
       if: success()
@@ -67,7 +84,7 @@ jobs:
         body: |
           Hello Team,
 
-          The latest FastAPI backend for TrueShorts has been successfully deployed on Azure Container Instance 🚀
+          The backend FastAPI container for TrueShorts has been successfully redeployed to Azure with the latest Docker image.
 
           ✅ Image: shubhthecoder/trueshorts_backend:latest  
           ✅ Container: trueshorts-backend  
