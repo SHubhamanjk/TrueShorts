@@ -6,7 +6,7 @@ from utils.database import db
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from langchain.agents import initialize_agent, Tool
-from langchain.tools import DuckDuckGoSearchRun, WikipediaQueryRun
+from langchain_community.tools import DuckDuckGoSearchRun, WikipediaQueryRun
 from duckduckgo_search import DDGS
 import wikipedia
 import asyncio
