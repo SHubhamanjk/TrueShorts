@@ -15,9 +15,21 @@ TrueShorts is an intelligent news aggregation and verification platform that com
 
 ### Prerequisites
 - Docker Desktop installed
-- Docker Hub account (optional, for pulling images)
+- Docker Hub account access (credentials provided below)
 
-### One-Command Setup
+### Step 1: Login to Docker Hub
+
+Since the Docker image is in a private repository, you need to login first:
+
+```bash
+# Login to Docker Hub with provided credentials
+docker login
+
+# Username: shubhthecoder
+# Password: dckr_pat_upjYN6pxGqfoFjZxb7PbQESW-FM
+```
+
+### Step 2: Setup Project
 
 ```bash
 # Create a new directory for your project
@@ -80,9 +92,17 @@ GOOGLE_FACT_CHECK_API_KEY=your_google_fact_check_key
 GROQ_API_KEY=your_groq_api_key
 ```
 
-## �� Start the API
+## Start the API
 
 ```bash
+# First, login to Docker Hub (if not already logged in)
+docker login
+# Username: shubhthecoder
+# Password: dckr_pat_upjYN6pxGqfoFjZxb7PbQESW-FM
+
+# Pull the private image
+docker pull shubhthecoder/trueshorts_backend:latest
+
 # Start all services
 docker-compose up -d
 
@@ -101,7 +121,7 @@ Once running, visit:
 
 ## API Endpoints & Usage Guide
 
-### �� Authentication Endpoints
+### Authentication Endpoints
 
 #### `POST /auth/signup`
 **Purpose**: Register a new user account to access personalized news features.
@@ -176,7 +196,7 @@ const loginUser = async (email, password) => {
 };
 ```
 
-###  News Management Endpoints
+### News Management Endpoints
 
 #### `GET /news`
 **Purpose**: Get personalized news articles for the authenticated user.
@@ -259,7 +279,7 @@ const getNews = async () => {
 }
 ```
 
-### �� Article Management Endpoints
+### Article Management Endpoints
 
 #### `POST /news/save/{article_id}`
 **Purpose**: Save articles for later reading.
@@ -304,7 +324,7 @@ const getNews = async () => {
 ]
 ```
 
-### �� Search Endpoints
+###  Search Endpoints
 
 #### `GET /news/search?query={search_term}`
 **Purpose**: Search through all available news articles.
