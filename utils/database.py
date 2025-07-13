@@ -1,8 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import Config
-from pymongo import MongoClient
-import os
 from datetime import datetime
+print("MONGO_URI:", Config.MONGO_URI)
 
 class Database:
     def __init__(self):
@@ -25,16 +24,5 @@ class Database:
 
 db = Database()
 
-
-
-COLLECTION = os.getenv("MONGO_COLLECTION", "heartbeat")
-
-client = MongoClient(Config.MONGO_URI)
-db = client[Config.MONGO_DB_NAME]
-
 def update_last_active():
-    db[COLLECTION].update_one(
-        {"_id": "trueshorts-backend"},
-        {"$set": {"last_active": datetime.utcnow()}},
-        upsert=True
-    )
+    db.update_last_active()

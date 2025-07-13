@@ -6,12 +6,12 @@ from utils.database import db
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from langchain.agents import initialize_agent, Tool
-from langchain_community.tools import DuckDuckGoSearchRun, WikipediaQueryRun
-from duckduckgo_search import DDGS
-import wikipedia
+# from langchain_community.tools import DuckDuckGoSearchRun, WikipediaQueryRun
+# from duckduckgo_search import DDGS
+# import wikipedia
+# from duckduckgo_search.exceptions import DuckDuckGoSearchException
 import asyncio
 from bson import ObjectId
-from duckduckgo_search.exceptions import DuckDuckGoSearchException
 
 # Ensure TTL index exists
 async def ensure_ttl_index():
@@ -29,41 +29,41 @@ def get_groq_llm():
 async def get_tools():
     tools = []
     # DuckDuckGo tool with error handling
-    def safe_ddg(q):
-        try:
-            return next(DDGS().text(q, max_results=3))
-        except DuckDuckGoSearchException as e:
-            # Log and skip DuckDuckGo if rate-limited
-            import logging
-            logging.warning(f"DuckDuckGo rate limit: {e}")
-            return None
-        except Exception as e:
-            import logging
-            logging.warning(f"DuckDuckGo error: {e}")
-            return None
+    # def safe_ddg(q):
+    #     try:
+    #         return next(DDGS().text(q, max_results=3))
+    #     except DuckDuckGoSearchException as e:
+    #         # Log and skip DuckDuckGo if rate-limited
+    #         import logging
+    #         logging.warning(f"DuckDuckGo rate limit: {e}")
+    #         return None
+    #     except Exception as e:
+    #         import logging
+    #         logging.warning(f"DuckDuckGo error: {e}")
+    #         return None
     # Wikipedia tool with error handling
-    def safe_wiki(q):
-        try:
-            return wikipedia.summary(q, sentences=3)
-        except Exception as e:
-            import logging
-            logging.warning(f"Wikipedia error: {e}")
-            return None
+    # def safe_wiki(q):
+    #     try:
+    #         return wikipedia.summary(q, sentences=3)
+    #     except Exception as e:
+    #         import logging
+    #         logging.warning(f"Wikipedia error: {e}")
+    #         return None
     # Add tools only if they work
-    ddg_result = safe_ddg("test")
-    wiki_result = safe_wiki("test")
-    if ddg_result:
-        tools.append(Tool(
-            name="DuckDuckGoSearch",
-            func=safe_ddg,
-            description="Searches the web using DuckDuckGo."
-        ))
-    if wiki_result:
-        tools.append(Tool(
-            name="Wikipedia",
-            func=safe_wiki,
-            description="Searches Wikipedia for summaries."
-        ))
+    # ddg_result = safe_ddg("test")
+    # wiki_result = safe_wiki("test")
+    # if ddg_result:
+    #     tools.append(Tool(
+    #         name="DuckDuckGoSearch",
+    #         func=safe_ddg,
+    #         description="Searches the web using DuckDuckGo."
+    #     ))
+    # if wiki_result:
+    #     tools.append(Tool(
+    #         name="Wikipedia",
+    #         func=safe_wiki,
+    #         description="Searches Wikipedia for summaries."
+    #     ))
     if not tools:
         # Fallback tool: use only LLM
         def llm_only_tool(q):

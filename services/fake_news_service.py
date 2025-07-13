@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
-from duckduckgo_search import DDGS
+# from duckduckgo_search import DDGS
 import wikipedia
 from typing import Tuple, List
 from config import Config
@@ -66,9 +66,9 @@ def serper_urls(claim):
     response = requests.post(url, headers=headers, json=payload)
     return [r["link"] for r in response.json().get("organic", [])[:3]]
 
-def ddg_urls(claim):
-    with DDGS() as ddgs:
-        return [r["href"] for r in ddgs.text(claim, max_results=3)]
+# def ddg_urls(claim):
+#     with DDGS() as ddgs:
+#         return [r["href"] for r in ddgs.text(claim, max_results=3)]
 
 def wiki_urls(claim):
     try:
@@ -97,7 +97,7 @@ def google_fact_check_urls(claim):
 async def run_all_sources_with_summary(claim) -> List[str]:
     all_urls = []
     all_urls += serper_urls(claim)
-    all_urls += ddg_urls(claim)
+    # all_urls += ddg_urls(claim)
     all_urls += wiki_urls(claim)
     all_urls += google_fact_check_urls(claim)
     # Scrape all articles concurrently

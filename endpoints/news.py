@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Header
 from services.news_service import get_news_for_user, track_user_read, deduplicate_articles, deduplicate_articles_for_user
 from utils.database import db
 from jose import jwt
@@ -15,8 +15,12 @@ from services import news_agent_service
 
 router = APIRouter()
 
-async def get_current_user(token: str):
+# Replace the old get_current_user with the new version that reads from the Authorization header
+async def get_current_user(authorization: str = Header(...)):
     try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise Exception("Invalid auth scheme")
         payload = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
         return payload["sub"]
     except Exception:
@@ -109,6 +113,14 @@ async def get_saved_articles(token: str = Depends(get_current_user)):
         saved.append(ArticleOut(**doc["article"]))
     return saved
 
+@router.get("/news/saved/{article_id}", response_model=ArticleOut)
+async def get_saved_article(article_id: str, token: str = Depends(get_current_user)):
+    user_id = token
+    doc = await db.db.saved_articles.find_one({"user_id": user_id, "article_id": article_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Saved article not found")
+    return ArticleOut(**doc["article"])
+
 @router.get("/news/search", response_model=List[SearchArticleOut])
 async def search_news(query: str = Query(..., description="Keywords or description to search in news")):
     articles = await fetch_all_articles()
@@ -181,3 +193,34 @@ async def get_more_follow_up(input: NewsAgentFollowUpInput):
         return NewsAgentFollowUpOutput(session_id=session_id, answer=answer)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/me")
+async def get_me(user=Depends(get_current_user)):
+    # user is the JWT payload (sub = user_id)
+    user_doc = await db.db.users.find_one({"_id": ObjectId(user)})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Get saved articles for this user
+    saved_cursor = db.db.saved_articles.find({"user_id": user})
+    saved_articles = []
+    async for doc in saved_cursor:
+        art = doc.get("article", {})
+        article_id = art.get("_id") or doc.get("article_id")
+        if isinstance(article_id, ObjectId):
+            article_id = str(article_id)
+        saved_articles.append({
+            "article_id": article_id,
+            "title": art.get("title"),
+            "content": art.get("content"),
+            "category": art.get("category"),
+            "published": art.get("published"),
+            "source": art.get("source"),
+            "url": art.get("url")
+        })
+    return {
+        "user_id": str(user_doc["_id"]),
+        "name": user_doc.get("name"),
+        "gender": user_doc.get("gender"),
+        "email": user_doc.get("email"),
+        "saved_articles": saved_articles
+    }
