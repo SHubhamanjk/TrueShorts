@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret")
-    GNEWS_API_KEY = os.getenv("GNEWS_API_KEY")
+    MONGO_URI = os.getenv("MONGO_URI", "")
+    SECRET_KEY = os.getenv("SECRET_KEY", "")
+    GNEWS_API_KEY = os.getenv("GNEWS_API_KEY", "")
     FAISS_INDEX_DIR = "faiss_indexes"
     RSS_SOURCES = {
         "bbc": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -15,8 +15,8 @@ class Config:
         "thehindu": "https://www.thehindu.com/news/national/?service=rss"
     }
     ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
-    GOOGLE_FACT_CHECK_API_KEY = os.getenv("GOOGLE_FACT_CHECK_API_KEY")
+    SERPER_API_KEY = os.getenv("SERPER_API_KEY", "")
+    GOOGLE_FACT_CHECK_API_KEY = os.getenv("GOOGLE_FACT_CHECK_API_KEY", "")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
     MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "news")
 

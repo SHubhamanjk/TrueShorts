@@ -106,12 +106,12 @@ All endpoints are available at the base URL (production or local). For example:
 For local development, create a `.env` file:
 
 ```env
-GNEWS_API_KEY=f30e4c031aa2ea070ba8b4fca5109aa3
-SECRET_KEY=1a2b3c4d5e6f7g8h9i0jkLMNOPQrstuvWXyz9876543210
-MONGO_URI=mongodb+srv://shubham07kumargupta:Shubham@2006@trueshorts-cluster.vzk8awq.mongodb.net/?retryWrites=true&w=majority&appName=trueshorts-cluster
-SERPER_API_KEY=0f8f7d962eeb0953e4190e2311e140c5a6c02d50
-GOOGLE_FACT_CHECK_API_KEY=AIzaSyDLMGxKA8LhHeejl52owJ6kLEYYWEnnnbw
-GROQ_API_KEY=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
+GNEWS_API_KEY=YOUR_GNEWS_API_KEY
+SECRET_KEY=YOUR_SECRET_KEY
+MONGO_URI=YOUR_MONGO_URI
+SERPER_API_KEY=YOUR_SERPER_API_KEY
+GOOGLE_FACT_CHECK_API_KEY=YOUR_GOOGLE_FACT_CHECK_API_KEY
+GROQ_API_KEY=YOUR_GROQ_API_KEY
 ```
 
 ## 🧑‍💻 Example: Using the API from Frontend
@@ -179,8 +179,8 @@ Since the Docker image is in a private repository, you need to login first:
 # Login to Docker Hub with provided credentials
 docker login
 
-# Username: shubhthecoder
-# Password: dckr_pat_upjYN6pxGqfoFjZxb7PbQESW-FM
+# Username: <dockerhub-username>
+# Password: <dockerhub-password>
 ```
 
 ### Step 2: Setup Project
@@ -223,12 +223,12 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
-      - GNEWS_API_KEY=f30e4c031aa2ea070ba8b4fca5109aa3
-      - SECRET_KEY=1a2b3c4d5e6f7g8h9i0jkLMNOPQrstuvWXyz9876543210
-      - MONGO_URI=mongodb://admin:password@mongodb:27017
-      - SERPER_API_KEY=0f8f7d962eeb0953e4190e2311e140c5a6c02d50
-      - GOOGLE_FACT_CHECK_API_KEY=AIzaSyDLMGxKA8LhHeejl52owJ6kLEYYWEnnnbw
-      - GROQ_API_KEY=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
+      - GNEWS_API_KEY=YOUR_GNEWS_API_KEY
+      - SECRET_KEY=YOUR_SECRET_KEY
+      - MONGO_URI=YOUR_MONGO_URI
+      - SERPER_API_KEY=YOUR_SERPER_API_KEY
+      - GOOGLE_FACT_CHECK_API_KEY=YOUR_GOOGLE_FACT_CHECK_API_KEY
+      - GROQ_API_KEY=YOUR_GROQ_API_KEY
 
 volumes:
   mongodb_data:
@@ -251,8 +251,8 @@ GROQ_API_KEY=your_groq_api_key
 ```bash
 # First, login to Docker Hub (if not already logged in)
 docker login
-# Username: shubhthecoder
-# Password: dckr_pat_upjYN6pxGqfoFjZxb7PbQESW-FM
+# Username: <dockerhub-username>
+# Password: <dockerhub-password>
 
 # Pull the private image
 docker pull shubhthecoder/trueshorts_backend:latest
@@ -923,12 +923,12 @@ docker exec -it trueshorts-test-mongodb-1 mongosh -u admin -p password --eval "d
 
 | Variable | Default Value | Description |
 |----------|---------------|-------------|
-| `GNEWS_API_KEY` | f30e4c031aa2ea070ba8b4fca5109aa3 | GNews API key for news aggregation |
-| `SECRET_KEY` | 1a2b3c4d5e6f7g8h9i0jkLMNOPQrstuvWXyz9876543210 | JWT secret key for authentication |
-| `MONGO_URI` | mongodb://admin:password@mongodb:27017 | MongoDB connection string |
-| `SERPER_API_KEY` | 0f8f7d962eeb0953e4190e2311e140c5a6c02d50 | Serper API key for web search |
-| `GOOGLE_FACT_CHECK_API_KEY` | AIzaSyDLMGxKA8LhHeejl52owJ6kLEYYWEnnnbw | Google Fact Check API key |
-| `GROQ_API_KEY` | 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 | Groq LLM API key for AI features |
+| `GNEWS_API_KEY` | YOUR_GNEWS_API_KEY | GNews API key for news aggregation |
+| `SECRET_KEY` | YOUR_SECRET_KEY | JWT secret key for authentication |
+| `MONGO_URI` | YOUR_MONGO_URI | MongoDB connection string |
+| `SERPER_API_KEY` | YOUR_SERPER_API_KEY | Serper API key for web search |
+| `GOOGLE_FACT_CHECK_API_KEY` | YOUR_GOOGLE_FACT_CHECK_API_KEY | Google Fact Check API key |
+| `GROQ_API_KEY` | YOUR_GROQ_API_KEY | Groq LLM API key for AI features |
 
 ## Ready to Test!
 
